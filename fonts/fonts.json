@@ -1,0 +1,10 @@
+[
+  { "file": "PlusJakartaSans-400.ttf", "family": "Plus Jakarta Sans", "weight": 400 },
+  { "file": "PlusJakartaSans-500.ttf", "family": "Plus Jakarta Sans", "weight": 500 },
+  { "file": "PlusJakartaSans-600.ttf", "family": "Plus Jakarta Sans", "weight": 600 },
+  { "file": "PlusJakartaSans-700.ttf", "family": "Plus Jakarta Sans", "weight": 700 },
+  { "file": "PlusJakartaSans-800.ttf", "family": "Plus Jakarta Sans", "weight": 800 },
+  { "file": "Caveat-400.ttf", "family": "Caveat", "weight": 400 },
+  { "file": "Caveat-700.ttf", "family": "Caveat", "weight": 700 },
+  { "file": "PatrickHand-Regular.ttf", "family": "Patrick Hand", "weight": 400 }
+]

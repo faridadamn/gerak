@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerak Preview</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><svg class="logo" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3"/><path d="M9 7.5v9l7.5-4.5z" fill="currentColor"/></svg> Gerak</div>
+  <div class="title" id="title">memuat…</div>
+  <div class="meta" id="meta"></div>
+  <div class="status" id="status" title="status build"><span class="dot"></span><span id="statusText">menghubungkan</span></div>
+</header>
+<main>
+  <aside id="side">
+    <section>
+      <h3>Scene</h3>
+      <ol id="scenes"></ol>
+    </section>
+    <section>
+      <h3>Layer <small>(klik mata untuk sembunyikan — hanya di preview)</small></h3>
+      <div id="tree"></div>
+    </section>
+  </aside>
+  <div id="stageWrap">
+    <div id="stage"><canvas id="view"></canvas><canvas id="overlay"></canvas></div>
+    <div id="error" hidden><strong>Build gagal</strong><pre id="errorText"></pre><small>Preview menampilkan versi terakhir yang berhasil. Simpan file lagi setelah diperbaiki.</small></div>
+  </div>
+</main>
+<footer>
+  <div class="transport">
+    <button id="bStart" title="Awal (Home)">⏮</button>
+    <button id="bPrev" title="Mundur 1 frame (←)">◀</button>
+    <button id="bPlay" class="play" title="Play/Pause (Spasi)">▶</button>
+    <button id="bNext" title="Maju 1 frame (→)">▶︎|</button>
+    <button id="bEnd" title="Akhir (End)">⏭</button>
+    <div class="readout"><span id="fNow">0</span><span class="dim"> / <span id="fTotal">0</span></span> <span id="tNow" class="time">0:00.00</span> <span id="sceneNow" class="dim"></span></div>
+    <div class="spacer"></div>
+    <label class="tog"><input type="checkbox" id="cLoop" checked> loop</label>
+    <label class="tog"><input type="checkbox" id="cAudio"> audio</label>
+    <label class="tog"><input type="checkbox" id="cSafe"> safe zone</label>
+    <label class="tog"><input type="checkbox" id="cGrid"> grid</label>
+    <label class="tog"><input type="checkbox" id="cOnion"> onion</label>
+    <select id="speed" title="Kecepatan"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+    <button id="bPng" title="Simpan frame ini sebagai PNG resolusi penuh">PNG</button>
+    <span id="perf" class="dim"></span>
+  </div>
+  <canvas id="timeline" height="76"></canvas>
+</footer>
+<audio id="audio" preload="auto"></audio>
+<script type="module" src="/app.mjs"></script>
+</body>
+</html>

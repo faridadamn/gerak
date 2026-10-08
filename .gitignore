@@ -1,0 +1,5 @@
+node_modules/
+output/
+out/
+*.part.*
+.DS_Store

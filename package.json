@@ -1,0 +1,48 @@
+{
+  "name": "gerak",
+  "version": "1.0.0",
+  "description": "Engine video code-first: gambar lewat kode, animasikan, render jadi MP4. Brush stroke, teks animasi, kamera, transisi, SFX, live preview.",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./core": "./src/core/index.mjs"
+  },
+  "bin": {
+    "gerak": "bin/gerak.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "fonts",
+    "templates",
+    "docs",
+    "examples",
+    "skill",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "example:sistem": "node bin/gerak.mjs render examples/sistem/sistem.mjs -o out/sistem.mp4",
+    "example:promo": "node bin/gerak.mjs render examples/promo/promo.mjs -o out/promo.mp4"
+  },
+  "keywords": [
+    "video",
+    "animation",
+    "motion-graphics",
+    "storyboard",
+    "brush",
+    "ffmpeg",
+    "canvas",
+    "code-first"
+  ],
+  "author": "Farid Adam",
+  "license": "MIT",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.10"
+  }
+}
