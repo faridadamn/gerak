@@ -86,7 +86,9 @@ l.move('2s', { x: 800 }, { dur: 18, ease: 'in-out-quart' });  // dari posisi saa
 l.removeKeys(['x']);
 ```
 
-Sebelum key pertama nilai key pertama yang berlaku; setelah key terakhir nilai terakhir bertahan.
+Sebelum key pertama nilai key pertama yang berlaku; setelah key terakhir nilai terakhir bertahan. Untuk objek yang muncul belakangan: `key(0, { opacity: 0 }, 'hold').key(30, { opacity: 1 })`.
+
+Urutan transform: `translate(x, y)` → di sekitar `pivot`: rotate → skew → scale. Rotasi dan skala memakai pivot yang sama; kalau butuh dua poros berbeda, pakai group (rotasi) + layer di dalamnya (skala).
 
 **Easing:** `linear`, `hold`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `in|out|in-out-{sine,quad,cubic,quart,quint,expo,circ,back,elastic,bounce}`,
 alias `in`, `out`, `in-out`, `smooth`, `snap`, `pop`, `anticipate`, `spring`, `spring-soft|stiff|bouncy`, `cubic-bezier(a,b,c,d)`, `[a,b,c,d]`, `steps(4)`, `{type:'spring', stiffness, damping, mass}`.
@@ -132,6 +134,17 @@ lengan.range(20, 30, null);                // kosongkan 20–29, pulihkan setela
 ```
 
 Track tidak menginterpolasi bentuk; dia mengganti gambar. Gerak (posisi/rotasi) tetap lewat keyframe.
+
+### Mask & clip
+
+```js
+const g = s.group('Foto dalam huruf', { mask: 'cetakan' });   // id layer anak yang jadi cetakan
+g.layer('Foto').image('foto.jpg', 0, 0, { width: 1080 });
+g.layer('Cetakan', { id: 'cetakan' }).text('LIBUR', 540, 900, { size: 300, weight: 800 });
+// maskInvert: true → kebalikannya (yang tertutup cetakan jadi hilang)
+```
+
+Layer cetakan boleh punya keyframe (mis. `scaleX` untuk slider sebelum/sesudah). `clip: { rect: [x, y, w, h] }` memotong isi node di koordinat lokalnya — untuk daftar yang menggulung, pasang clip di group induk yang diam dan gerakkan group anaknya.
 
 ## Elemen
 

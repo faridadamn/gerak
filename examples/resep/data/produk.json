@@ -1,0 +1,5 @@
+[
+  { "nama": "Kopi Susu Aren", "harga": 18000, "terjual": 1240, "warna": "#8d5524", "filter": null },
+  { "nama": "Kopi Pandan", "harga": 20000, "terjual": 860, "warna": "#2b8a3e", "filter": "hue-rotate(75deg) saturate(1.2)" },
+  { "nama": "Kopi Ube", "harga": 22000, "terjual": 530, "warna": "#6741d9", "filter": "hue-rotate(230deg) saturate(1.3)" }
+]

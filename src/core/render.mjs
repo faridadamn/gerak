@@ -458,9 +458,20 @@ export class Renderer {
       if (node.mask) {
         const maskNode = (node.children || []).find((c) => c.id === node.mask);
         if (maskNode) {
+          // Render the mask into its own buffer with normal compositing, then apply it with drawImage.
+          // (Filling a transformed Path2D directly with 'destination-in' is unreliable in some
+          // canvas backends: the path can be culled using its untransformed bounds.)
+          const mc = this._acquire(this.pw, this.ph);
+          const mx = mc.getContext('2d');
+          mx.setTransform(m);
+          this._node(mx, { ...maskNode, visible: true }, lf, childRc);
+          o.save();
+          o.setTransform(1, 0, 0, 1, 0, 0);
+          o.globalAlpha = 1;
           o.globalCompositeOperation = node.maskInvert ? 'destination-out' : 'destination-in';
-          this._node(o, { ...maskNode, visible: true }, lf, childRc);
-          o.globalCompositeOperation = 'source-over';
+          o.drawImage(mc, 0, 0);
+          o.restore();
+          this._release();
         }
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -225,3 +225,37 @@ test('examples build', async () => {
     assert.ok(p.duration > 0, f);
   }
 });
+
+test('presets read target before keying (zoomIn/spinIn end at base scale)', () => {
+  const p = project({ preset: 'hd', fps: 30 });
+  const s = p.scene('S', { duration: 60 });
+  const a = s.layer('A');
+  a.zoomIn(0, { from: 0.4, dur: 20 });
+  const b = s.layer('B', { scale: 2 });
+  b.spinIn(0, { dur: 20 });
+  assert.equal(evalTransform(a.node, 30, 30).scale, 1);
+  assert.equal(evalTransform(b.node, 30, 30).scale, 2);
+});
+
+test('typewriter speed follows cps (no default dur override)', () => {
+  const p = project({ preset: 'hd', fps: 30 });
+  const t = p.scene('S', { duration: 60 }).layer('L').text('abcdefghij', 0, 0, { anim: { type: 'typewriter', at: 0, cps: 5 } });
+  assert.equal(t.el.anim.dur, undefined);
+});
+
+test('mask works when the mask layer is translated off its own origin', async () => {
+  const p = project({ width: 400, height: 200, background: '#000' });
+  const s = p.scene('s', { duration: 10 });
+  const g = s.group('g', { mask: 'm' });
+  g.layer('isi').rect(0, 0, 400, 200, { fill: '#ff0000' });
+  const m = g.layer('m', { id: 'm', x: 400 });
+  m.rect(-400, 0, 400, 200, { fill: '#fff' });
+  m.key(0, { scaleX: 0.5 });
+  const env = await makeEnv(p.doc);
+  const r = new Renderer(p.doc, env);
+  const c = createCanvas(400, 200);
+  const x = c.getContext('2d');
+  r.renderFrame(x, 0);
+  assert.equal(x.getImageData(20, 100, 1, 1).data[0], 0); // kiri: tertutup mask
+  assert.equal(x.getImageData(380, 100, 1, 1).data[0], 255); // kanan: terlihat
+});

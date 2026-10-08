@@ -6,7 +6,7 @@ import { parseColor, rgba } from './color.mjs';
  *  - CSS color string
  *  - { type:'linear', from:[x,y], to:[x,y], stops:[[0,'#fff'],[1,'#000']] }
  *  - { type:'linear', angle: 90, stops } (relative to `bounds`, 0deg = left->right, 90deg = top->bottom)
- *  - { type:'radial', at:[x,y], radius, stops } or relative { type:'radial', stops } (centered in bounds)
+ *  - { type:'radial', at:[x,y], radius, stops } or relative { type:'radial', stops } (centered in bounds, radius = half the larger side)
  */
 export function makePaint(ctx, spec, bounds) {
   if (spec === undefined || spec === null) return null;
@@ -24,7 +24,7 @@ export function makePaint(ctx, spec, bounds) {
       cy = bounds.y + bounds.height / 2;
     } else [cx, cy] = [0, 0];
     if (spec.radius !== undefined) r = spec.radius;
-    else r = bounds ? Math.hypot(bounds.width, bounds.height) / 2 : 100;
+    else r = bounds ? Math.max(bounds.width, bounds.height) / 2 : 100; // fits circles/ellipses exactly
     const [fx, fy] = spec.focus ?? [cx, cy];
     g = ctx.createRadialGradient(fx, fy, spec.innerRadius ?? 0, cx, cy, Math.max(0.001, r));
   } else {

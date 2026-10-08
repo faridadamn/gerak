@@ -321,7 +321,8 @@ export class NodeHandle {
   zoomIn(at = 0, { from = 1.25, dur = 16, ease = 'out-cubic', fade = true } = {}) {
     const f0 = this.t(at);
     const f1 = f0 + this.t(dur);
-    this.key(f0, { scale: from }, ease).key(f1, { scale: this._valueAt('scale', f1) });
+    const target = this._valueAt('scale', f1); // read BEFORE adding keys
+    this.key(f0, { scale: from }, ease).key(f1, { scale: target });
     if (fade) this.fadeIn(f0, Math.max(1, this.t(dur) * 0.6));
     return this;
   }
@@ -346,7 +347,8 @@ export class NodeHandle {
     const f0 = this.t(at);
     const f1 = f0 + this.t(dur);
     const r = this._valueAt('rotation', f1);
-    this.key(f0, { rotation: r - 360 * turns, scale: 0 }, ease).key(f1, { rotation: r, scale: this._valueAt('scale', f1) || 1 });
+    const sc = this._valueAt('scale', f1) || 1;
+    this.key(f0, { rotation: r - 360 * turns, scale: 0 }, ease).key(f1, { rotation: r, scale: sc });
     return this;
   }
 
@@ -510,7 +512,8 @@ export class NodeHandle {
     const fps = this.fps;
     const el = { type: 'text', text: String(str), x, y };
     for (const k of ['font', 'size', 'weight', 'italic', 'color', 'align', 'valign', 'maxWidth', 'fit', 'lineHeight', 'letterSpacing', 'stroke', 'strokeWidth', 'box', 'case', 'seed']) if (style[k] !== undefined) el[k] = style[k];
-    if (style.anim) el.anim = timing(style.anim, fps, 'anim', { dur: 10 });
+    // no default dur here: typewriter uses cps, count defaults to 1s, per-unit effects default to 10 frames in the renderer
+    if (style.anim) el.anim = timing(style.anim, fps, 'anim', {});
     if (style.exit) el.exit = timing(style.exit, fps, 'exit', { dur: 8 });
     if (style.highlight) {
       const hl = Array.isArray(style.highlight) ? style.highlight : [style.highlight];
@@ -551,7 +554,7 @@ export class NodeHandle {
     for (const [k, v] of Object.entries(patch)) {
       if (k === 'id') continue;
       if (k === 'reveal' || k === 'draw') el[k] = timing(v, fps, k, { dur: 12 });
-      else if (k === 'anim' || k === 'exit') el[k] = timing(v, fps, k, { dur: 10 });
+      else if (k === 'anim' || k === 'exit') el[k] = timing(v, fps, k, {});
       else if (k === 'show') el.show = range(v, fps, 'show');
       else if (k === 'points') el.points = packPoints(v);
       else if (v === undefined || v === null) delete el[k];

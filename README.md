@@ -109,20 +109,26 @@ gerak doctor
 
 ## Contoh
 
+**[`examples/resep/`](examples/resep/README.md) — 100 resep siap salin**, dikelompokkan per kategori: teks & tipografi kinetik, brush & gambar tangan, motion graphic, data & infografis, kamera, transisi, animasi karakter, format konten sosmed (9:16 / 1:1 / 4:5 / 16:9 / overlay transparan / GIF), edukasi, audio & musik, dan teknik lanjutan (mask, blend, font kustom, revisi JSON, data dari file, varian massal, layout multi-format). Tiap file berdiri sendiri dan punya header `kategori / fitur / pakai`; daftar lengkapnya ada di `examples/resep/README.md` dan `katalog.json`.
+
+```sh
+gerak preview examples/resep/100-showcase-lengkap.mjs
+gerak render  examples/resep/053-sebelum-sesudah-slider.mjs
+npm test                      # termasuk cek semua 100 resep bisa dirender
+node scripts/katalog.mjs      # bikin ulang katalog setelah menambah resep
+```
+
+Contoh besar lain:
+
 | | |
 | --- | --- |
 | `examples/sistem/` | **Satu Orang, Satu Sistem** — animatic gambar tangan 9:16 ±16 detik: siluet tokoh, track lengan ngetik, jam berputar, chat menumpuk dengan clip + scroll, flowchart sketsa, roda gigi, line boil, 5 transisi, SFX + musik pad sintetis. |
 | `examples/promo/` | **3 Tools AI Gratis** — listicle brand clean: scramble, karaoke caption, ikon vektor animasi, progres, push transitions, beat. |
 
-```sh
-npm run example:sistem    # → out/sistem.mp4
-npm run example:promo     # → out/promo.mp4
-```
-
 ## Dokumentasi
 
 - [`docs/API.md`](docs/API.md) — referensi lengkap API (project, scene, layer, elemen, animasi, kamera, audio, export).
-- [`skill/SKILL.md`](skill/SKILL.md) — panduan buat coding agent (Claude Code / Codex): alur kerja brief → script → review sheet → revisi → render.
+- [`skill/SKILL.md`](skill/SKILL.md) — panduan buat coding agent: cari resep → salin → review sheet → revisi → render, plus daftar jebakan yang sering bikin salah.
 
 ## Pakai dari kode (tanpa CLI)
 
