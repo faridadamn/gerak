@@ -1,7 +1,7 @@
 {
   "name": "gerak",
   "version": "1.0.0",
-  "description": "Engine video code-first: gambar lewat kode, animasikan, render jadi MP4. Brush stroke, teks animasi, kamera, transisi, SFX, live preview.",
+  "description": "Engine video code-first + Gerak Studio (editor visual di browser): gambar lewat kode atau kuas, animasikan, render jadi MP4. Brush stroke, teks animasi, kamera, transisi, SFX.",
   "type": "module",
   "main": "src/index.mjs",
   "exports": {
@@ -27,6 +27,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
+    "studio": "node bin/gerak.mjs studio",
     "example:sistem": "node bin/gerak.mjs render examples/sistem/sistem.mjs -o out/sistem.mp4",
     "example:promo": "node bin/gerak.mjs render examples/promo/promo.mjs -o out/promo.mp4"
   },

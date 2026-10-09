@@ -4,15 +4,20 @@
 
 Gerak adalah engine video *code-first* untuk Node.js. Lu (atau coding agent lu) nulis script JavaScript/TypeScript, Gerak menggambar tiap frame — coretan kuas ber-tekanan, bentuk vektor, teks beranimasi, gambar — lalu merender jadi MP4/WebM/MOV/GIF lengkap dengan audio.
 
+Gak mau ngoding? **Gerak Studio** (`gerak studio`) adalah editor visual di browser: gambar pakai mouse/pen, taruh teks & foto, animasikan dengan preset atau keyframe, tambah musik & SFX, lalu render — pakai engine yang sama.
+
 Konsepnya terinspirasi dari [Codeboard](https://github.com/nonomnonom/codeboard) (gambar lewat kode, layer bisa direvisi, render jadi film). Kodenya ditulis dari nol dan diarahkan buat konten: preset 9:16, animasi teks ala caption TikTok, SFX sintetis bebas hak cipta, dan live preview di browser.
 
 ```
-script.mjs ──► project (.gerak.json) ──► preview browser (live reload)
-                                     └──► render: MP4 · WebM/MOV transparan · GIF · PNG · contact sheet
+script.mjs ──────────►┐
+                      ├─ project (.gerak.json) ──► render: MP4 · WebM/MOV transparan · GIF · PNG · contact sheet
+Gerak Studio ◄───────►┘                        └─► preview browser (live reload)
+(editor visual)
 ```
 
 ## Isi
 
+- **Gerak Studio** — editor visual di browser (jalan di VPS sendiri): kuas, teks, bentuk, foto, preset animasi, keyframe + timeline, scene & transisi, kamera, musik & SFX, render MP4/GIF/transparan, autosave, undo. Bisa mulai dari 100 resep.
 - **Brush engine** — `pen`, `ink`, `fineliner`, `marker`, `highlighter`, `brush`, `dry`, `pencil`, `charcoal`, `chalk`, `crayon`, `airbrush`, `neon`. Tekanan, taper, wobble tangan, tergambar pelan-pelan (`reveal`), penghapus.
 - **Vektor** — rect, circle, ellipse, line, arrow, polygon, star, arc, SVG path apa saja; gradien; draw-on; mode **sketch** (garis tangan + arsir ala rough.js).
 - **Teks** — wrap, align, outline, shadow, kotak caption, highlight (marker/underline/strike/circle/box), animasi `typewriter`, `chars`, `words`, `lines`, `scramble`, `count` (format Rupiah), `karaoke`.
@@ -46,7 +51,25 @@ gerak preview video.mjs --host 0.0.0.0     # buka http://IP-VPS:4300, edit file 
 gerak render video.mjs                     # → output/video.mp4
 ```
 
-Script minimal:
+## Gerak Studio (editor visual)
+
+```sh
+gerak studio                                   # http://127.0.0.1:4400, proyek di ~/gerak-studio
+gerak studio --host 0.0.0.0 --password rahasia # di VPS, buka http://IP-VPS:4400
+```
+
+- **Gambar** pakai 13 jenis kuas (tekanan pen tablet didukung), bisa langsung "tergambar" pelan-pelan di video.
+- **Teks, bentuk, foto**: tiap objek jadi layer. Geser, skala, putar langsung di kanvas.
+- **Animasi**: satu klik (Pop, Fade, Naik, Zoom, Jatuh, Sapu, …), keyframe ◇ + Auto-key, gerak terus (melayang, goyang, denyut), animasi teks (per kata, mesin ketik, hitung angka, karaoke, sorot kata).
+- **Timeline**: seret keyframe, atur kapan layer muncul/hilang, geser semua timing sekaligus, atur easing.
+- **Scene & transisi, kamera**, latar gradien, grain, vignette.
+- **Suara**: unggah musik + 29 SFX sintetis, preview sinkron.
+- **Render** MP4 / GIF / WebM & MOV transparan di server, tinggal unduh.
+- Proyek = `.gerak.json` biasa: bisa dirender dari CLI dan direvisi agent lewat kode. Script `.mjs` buatan agent di folder kerja bisa dibuka di Studio.
+
+Panduan lengkap (termasuk systemd & Nginx): [`docs/STUDIO.md`](docs/STUDIO.md).
+
+## Script minimal
 
 ```js
 import { project } from 'gerak';
@@ -91,6 +114,7 @@ export default p;
 ```
 gerak init <file> [--template basic|story|promo] [--preset reels|square|feed|youtube]
 gerak preview <src> [--port 4300] [--host 0.0.0.0]
+gerak studio [folder] [--port 4400] [--host 0.0.0.0] [--password …]   editor visual
 gerak render <src> [-o out.mp4|.webm|.mov|.gif] [--draft] [--scale 0.5] [--from 2s --to 5s]
                    [--workers 4] [--crf 18] [--preset medium] [--transparent] [--no-audio]
 gerak run <src>             simpan .gerak.json + poster + contact sheet (+ --movie)
@@ -128,6 +152,7 @@ Contoh besar lain:
 ## Dokumentasi
 
 - [`docs/API.md`](docs/API.md) — referensi lengkap API (project, scene, layer, elemen, animasi, kamera, audio, export).
+- [`docs/STUDIO.md`](docs/STUDIO.md) — panduan Gerak Studio: alat, animasi, timeline, suara, render, deploy di VPS.
 - [`skill/SKILL.md`](skill/SKILL.md) — panduan buat coding agent: cari resep → salin → review sheet → revisi → render, plus daftar jebakan yang sering bikin salah.
 
 ## Pakai dari kode (tanpa CLI)

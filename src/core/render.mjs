@@ -13,13 +13,27 @@ import { wobble } from './geom.mjs';
 
 const tlCache = new WeakMap();
 
+// any transition field (type, duration, colour, ease, centre) changes the cached timeline entry
+const sceneKey = (s) => `${s.duration}|${s.transition ? JSON.stringify(s.transition) : ''}`;
+
+/** Cached timeline is valid while the same scene objects keep the same order, durations and transitions. */
+function timelineFresh(tl, doc) {
+  if (!tl || tl.entries.length !== doc.scenes.length) return false;
+  for (let i = 0; i < doc.scenes.length; i++) {
+    const e = tl.entries[i];
+    const s = doc.scenes[i];
+    if (e.scene !== s || e.key !== sceneKey(s)) return false;
+  }
+  return true;
+}
+
 /**
  * Scene placement on the global timeline. A transition into scene i overlaps
  * the last `duration` frames of scene i-1 with the first frames of scene i.
  */
 export function buildTimeline(doc) {
   const hit = tlCache.get(doc);
-  if (hit && hit.sig === doc.scenes.length) return hit;
+  if (timelineFresh(hit, doc)) return hit;
   const entries = [];
   let cursor = 0;
   let prevDur = 0;
@@ -31,7 +45,7 @@ export function buildTimeline(doc) {
       if (d > 0) tr = { ...s.transition, duration: d };
     }
     const start = tr ? cursor - tr.duration : cursor;
-    entries.push({ scene: s, index: i, start, end: start + dur, duration: dur, transition: tr });
+    entries.push({ scene: s, index: i, start, end: start + dur, duration: dur, transition: tr, key: sceneKey(s) });
     cursor = start + dur;
     prevDur = dur;
   });

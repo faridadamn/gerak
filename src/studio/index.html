@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerak Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232D3E8D'/%3E%3Cpath d='M8 21c4-9 8-9 10-3s6 2 6-6' fill='none' stroke='%2300B7B3' stroke-width='3.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/studio/studio.css">
+<script type="importmap">
+{ "imports": { "node:fs": "/studio/shim/fs.mjs", "node:path": "/studio/shim/path.mjs" } }
+</script>
+</head>
+<body class="noproject">
+<div id="app">
+  <header id="top"></header>
+
+  <aside id="left">
+    <nav id="lefttabs" class="tabs">
+      <button data-tab="scenes" class="on">Scene</button>
+      <button data-tab="assets">Aset</button>
+      <button data-tab="sound">Suara</button>
+    </nav>
+    <section id="tab-scenes" class="tab on"></section>
+    <section id="tab-assets" class="tab"></section>
+    <section id="tab-sound" class="tab"></section>
+  </aside>
+
+  <main id="center">
+    <div id="optbar"></div>
+    <div id="workarea">
+      <div id="toolrail"></div>
+      <div id="stage">
+        <canvas id="view"></canvas>
+        <canvas id="overlay"></canvas>
+        <div id="zoomctl"></div>
+        <div id="emptyStage">Buka atau buat proyek untuk mulai.</div>
+      </div>
+    </div>
+  </main>
+
+  <aside id="right"><div id="inspector"></div></aside>
+
+  <footer id="bottom">
+    <div id="resizer" title="Tarik untuk mengubah tinggi timeline"></div>
+    <div id="transport"></div>
+    <div id="strip"></div>
+    <div id="tlBody">
+      <div id="tlHead"><div id="tlCorner"></div><canvas id="ruler"></canvas></div>
+      <div id="tlScroll"><div id="tlLabels"></div><canvas id="tlTracks"></canvas></div>
+    </div>
+  </footer>
+</div>
+<div id="modal" hidden></div>
+<div id="toast"></div>
+<audio id="audio" preload="auto"></audio>
+<script type="module" src="/studio/studio.mjs"></script>
+</body>
+</html>

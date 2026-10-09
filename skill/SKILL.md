@@ -56,6 +56,15 @@ Sumber yang WAJIB dipakai:
 - [ ] SFX jatuh tepat di momen visual (pop teks, garis tergambar, transisi).
 - [ ] Format & durasi sesuai platform.
 
+## Kerja bareng Gerak Studio (editor visual)
+
+User bisa mengedit video sendiri di Gerak Studio (`gerak studio`, folder kerja default `~/gerak-studio`). Panduan: `docs/STUDIO.md`.
+
+- **Serahkan script ke Studio**: simpan script `.mjs` di folder kerja Studio. User membukanya lewat *Proyek → Script di folder ini → Buka di Studio*. Studio membuat salinan `.gerak.json`, dan script kamu tidak diubah. Aset yang dipakai script sebaiknya juga ada di folder kerja.
+- **Revisi proyek buatan Studio**: file `*.gerak.json` di folder kerja adalah project biasa. Pakai `open(file)` → `p.find(id)` → `p.save(file)` (resep 094). ID terlihat di panel kanan Studio. Path aset di file itu relatif terhadap folder kerja.
+- **Jangan menyimpan file yang sedang dibuka user di Studio.** Autosave Studio akan menimpanya. Simpan ke nama baru (`video-v2.gerak.json`) lalu beri tahu user.
+- Elemen yang dibuat Studio: teks/bentuk/gambar masing-masing satu layer dengan objek berpusat di (0,0) dan posisi di `transform.x/y`. Coretan kuas ada di layer "Gambar N" dengan koordinat kanvas.
+
 ## Kalau ada error
 
 Pesan error Gerak berbahasa Indonesia dan menyebut opsi yang valid (nama brush/easing/channel/transisi). Perbaiki sesuai pesan, jalankan `gerak run` lagi. `gerak doctor` untuk cek Node/FFmpeg/font. `gerak list` untuk daftar brush, easing, transisi, SFX, preset.

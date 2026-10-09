@@ -60,6 +60,7 @@ ${C.b('Mulai')}
   gerak init scene.mjs [--preset reels|square|youtube|feed] [--template basic|story|promo]
   gerak preview scene.mjs          live preview di browser (auto-reload saat file disimpan)
   gerak render scene.mjs -o out.mp4
+  gerak studio [folder]            editor visual di browser (gambar, animasi, render tanpa kode)
 
 ${C.b('Perintah')}
   init <file>              bikin scene starter (tidak menimpa file yang ada)
@@ -72,6 +73,8 @@ ${C.b('Perintah')}
   audio <src>              mixdown audio saja (-o mix.wav|mp3)
   info <src>               ringkasan scene, layer, ID, timing (--json)
   preview <src>            server preview (--port 4300 --host 0.0.0.0)
+  studio [folder]          Gerak Studio, editor visual (default folder ~/gerak-studio)
+                           --port 4400 --host 0.0.0.0 --password rahasia
   sfx <type>               generate efek suara WAV (sfx --list)
   list                     daftar brush, easing, transisi, sfx, preset, font
   doctor                   cek Node, canvas, FFmpeg, font
@@ -262,6 +265,15 @@ async function main() {
       const src = need(pos[0], 'Pakai: gerak preview scene.mjs');
       const { startPreview } = await import('../src/node/preview.mjs');
       await startPreview(src, { port: num(flags.port) ?? 4300, host: typeof flags.host === 'string' ? flags.host : '127.0.0.1', open: flags.open });
+      return;
+    }
+    case 'studio': {
+      const { startStudio } = await import('../src/node/studio.mjs');
+      await startStudio(pos[0] ?? join(os.homedir(), 'gerak-studio'), {
+        port: num(flags.port) ?? 4400,
+        host: typeof flags.host === 'string' ? flags.host : '127.0.0.1',
+        password: typeof flags.password === 'string' ? flags.password : process.env.GERAK_STUDIO_PASSWORD,
+      });
       return;
     }
     case '__export-json': {
