@@ -13,7 +13,7 @@ Sumber yang WAJIB dipakai:
 
 ## Alur kerja
 
-0. **Cari resep paling mirip** dengan brief di `examples/resep/README.md` (atau `grep -l "kata-kunci" examples/resep/*.mjs`). Baca file itu sampai habis. Salin ke folder kerja, lalu ubah. Jangan mulai dari nol kalau ada resep yang mirip. Gabungkan 2–3 resep kalau brief butuh beberapa teknik.
+0. **Pilih gaya, lalu cari teknik.** Baca bagian *Aturan desain* di bawah dan pilih arah visual (referensi: `examples/gaya/README.md`). Lalu cari resep yang tekniknya paling mirip dengan brief di `examples/resep/README.md` (atau `grep -l "kata-kunci" examples/resep/*.mjs`), baca sampai habis, ambil tekniknya — **bukan warna & tata letaknya**. Gabungkan 2–3 resep kalau brief butuh beberapa teknik.
 1. **Tentukan format**: `preset: 'reels'` (9:16 TikTok/Reels/Shorts), `square` (1:1), `feed` (4:5), `youtube` (16:9). fps 24 untuk gaya gambar tangan, 30 untuk motion graphic.
 2. **Rencanakan scene**: tiap scene = satu gagasan, 2–4 detik. Tulis `s.note({ action, dialog, camera })`.
 3. **Tulis script**. Wajib `export default p`. Simpan aset (gambar/audio) di samping script; path relatif terhadap file script.
@@ -24,6 +24,21 @@ Sumber yang WAJIB dipakai:
 5. **Revisi terarah**: ubah hanya bagian bermasalah (pakai ID dari `info`). Lihat resep 094 untuk revisi file `.gerak.json`.
 6. **Render**: `gerak render video.mjs --draft` (cepat) → kalau oke `gerak render video.mjs -o final.mp4`.
 7. Laporkan file output + yang belum dicek (mis. audio belum didengar).
+
+## Aturan desain (WAJIB — ini yang membedakan video bagus dari template)
+
+Resep di `examples/resep/` mengajarkan **teknik**, bukan gaya. Banyak di antaranya sengaja polos (kartu putih, teal + navy). Kalau gayanya ikut disalin, hasilnya generik.
+
+1. **Pilih arah visual dulu, sebelum menulis kode.** Tulis 1 kalimat di komentar atas script: benda/dunia apa (struk kasir, poster Swiss, buku tulis, cetakan riso…), palet 2–4 warna, 1–2 font. Lihat `examples/gaya/README.md` untuk 10 referensi gaya yang standarnya sudah benar.
+2. **Hindari gaya bawaan AI**: latar gelap + neon cyan/ungu + kartu membulat + ikon bintang. Hindari juga palet teal `#00B7B3` + navy `#2D3E8D` dari resep kecuali brand-nya memang itu.
+3. **Isi layar.** 9:16 itu tinggi: teks utama ≥ 150px, teks pendukung ≥ 48px, dan jangan biarkan setengah layar kosong. Satu gagasan per scene, ditulis besar.
+4. **Ritme dari musik.** Tentukan BPM di awal (`const K = p.fps * 60 / BPM`). Kemunculan penting, SFX, dan pergantian scene jatuh di kelipatan `K`.
+5. **Pakai kekuatan Gerak sebagai bagian cerita**: coretan kuas/pulpen yang tergambar (`reveal`), garis `draw`, lingkaran tangan, stabilo, mask/clip, kamera yang bergerak. Video tanpa satu pun dari ini biasanya terasa seperti slide.
+6. **Font**: font bawaan cukup untuk banyak hal, tapi gaya tertentu butuh karakter (serif editorial, condensed, mono, retro). Contoh font OFL ada di `examples/gaya/fonts/`.
+7. **Lihat sebelum render final**: `gerak sheet` → cek teks terpotong/bertumpuk, ruang kosong, objek nongol terlalu awal. Revisi, sheet lagi, baru render. Cek level audio: `ffmpeg -i out.mp4 -af volumedetect -f null -` (rata-rata ≈ −27…−32 dB).
+8. **Path aset relatif ke script**, jangan path absolut VPS (`/home/ubuntu/...`), biar bisa dirender di mana saja.
+
+Alur yang benar: brief → pilih gaya (lihat `examples/gaya/`) → ambil teknik dari resep → tulis script dengan palet & font gaya itu → sheet → revisi → render.
 
 ## Aturan yang sering bikin salah
 

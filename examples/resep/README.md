@@ -10,6 +10,10 @@ gerak render  examples/resep/001-hook-kata-pop.mjs     # MP4
 ```
 
 Cari berdasarkan fitur: `grep -l "karaoke" examples/resep/*.mjs` atau buka `katalog.json`.
+
+> **Resep = teknik, bukan gaya.** Banyak resep di sini sengaja polos (kartu putih, teal + navy) supaya fiturnya kelihatan jelas. Ambil tekniknya, jangan salin tampilannya. Untuk arah visual, lihat [`../gaya/`](../gaya/README.md) (10 video jadi dengan gaya berbeda).
+>
+> Resep yang tampilannya sudah layak dijadikan **referensi gaya**: 010 kutipan kuas · 016 tanda tangan · 018 sketsa rumah · 021 papan kapur · 023 ensō kuas kering · 024 neon · 027 karakter line boil · 043 impact shake (omzet 10X) · 046 dutch angle ("tapi…") · 060 api unggun · 061 kucing tidur · 066 flash sale · 090 mask teks foto · 097 pola generatif.
 Aset contoh ada di `assets/` (dibuat ulang dengan `node examples/resep/assets/buat-aset.mjs`).
 
 ## Teks & tipografi kinetik
