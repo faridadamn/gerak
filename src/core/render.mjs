@@ -171,9 +171,39 @@ export class Renderer {
 
   _scene(ctx, scene, lf, opts) {
     const doc = this.doc;
+    const mb = doc.motionBlur;
+    // Kamera bergerak → seluruh dunia bergerak: blur satu scene utuh (n render) lebih murah
+    // daripada blur per layer. Kamera diam → blur per layer yang bergerak saja (lihat _node).
+    const camPx = mb && !opts._sceneMB && scene.camera ? this._cameraShift(scene.camera, lf - mb.shutter / 2, lf + mb.shutter / 2) : 0;
+    if (camPx >= MB_MIN_PX) {
+      const n = mbSamples(camPx, mb.samples);
+      const m = ctx.getTransform();
+      const acc = this._acquire(this.pw, this.ph);
+      const ax = acc.getContext('2d');
+      const weights = Array.from({ length: n }, (_, i) => Math.floor((255 * (i + 1)) / n) - Math.floor((255 * i) / n));
+      for (let i = 0; i < n; i++) {
+        const ts = lf - mb.shutter / 2 + (mb.shutter * i) / (n - 1);
+        const tmp = this._acquire(this.pw, this.ph);
+        const tx = tmp.getContext('2d');
+        tx.setTransform(m);
+        this._scene(tx, scene, ts, { ...opts, _sceneMB: true });
+        ax.globalCompositeOperation = 'lighter';
+        ax.globalAlpha = weights[i] / 255;
+        ax.drawImage(tmp, 0, 0);
+        this._release();
+      }
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const gap = mbGap(camPx * Math.hypot(m.a, m.b), n);
+      if (gap) ctx.filter = gap;
+      ctx.drawImage(acc, 0, 0);
+      ctx.restore();
+      this._release();
+      return;
+    }
     if (opts.background !== false) this._background(ctx, scene.background ?? doc.background ?? '#ffffff');
     const cam = evalCamera(scene.camera, lf, doc.fps);
-    const rc = { cam, fps: doc.fps, W: doc.width, H: doc.height, root: true, scene };
+    const rc = { cam, fps: doc.fps, W: doc.width, H: doc.height, root: true, scene, inMB: !!opts._sceneMB };
     for (const node of scene.layers || []) this._node(ctx, node, lf, rc);
   }
 
@@ -434,6 +464,10 @@ export class Renderer {
   _node(ctx, node, lf, rc) {
     if (node.visible === false) return;
     if (node.exposure && (lf < node.exposure[0] || lf >= node.exposure[1])) return;
+    if (!rc.inMB) {
+      const mb = node.motionBlur === false ? null : node.motionBlur || (rc.root && this.doc.motionBlur) || null;
+      if (mb && this._motionBlurNode(ctx, node, lf, rc, mb)) return;
+    }
     const t = evalTransform(node, lf, rc.fps);
     if (t.opacity <= 0.0005) return;
     ctx.save();
@@ -460,6 +494,7 @@ export class Renderer {
     if (node.wipe) applyWipe(ctx, node.wipe, lf, rc);
     const childRc = { ...rc, root: false };
     const blurPx = t.blur > 0.01 ? t.blur : 0;
+    const glow = node.glow && t.glow > 0.001 ? node.glow : null;
     const isolate = node.isolate || blurPx || node.filter || node.mask || node.hasErase;
     if (isolate) {
       const m = ctx.getTransform();
@@ -495,16 +530,242 @@ export class Renderer {
       if (blurPx) filters.push(`blur(${(blurPx * k).toFixed(2)}px)`);
       if (node.filter) filters.push(node.filter);
       if (filters.length) ctx.filter = filters.join(' ');
+      if (glow) this._glow(ctx, cv, glow, t.glow, k, parentAlpha * t.opacity);
       if (node.shadow) applyShadow(ctx, { ...node.shadow, blur: (node.shadow.blur ?? 12) * k, x: (node.shadow.x ?? 0) * k, y: (node.shadow.y ?? 4) * k });
       ctx.drawImage(cv, 0, 0);
       this._release();
     } else {
+      if (glow) this._glowDirect(ctx, node, lf, childRc, glow, t);
       ctx.globalAlpha *= t.opacity;
       if (node.blend) ctx.globalCompositeOperation = node.blend;
       if (node.shadow) applyShadow(ctx, node.shadow);
       this._content(ctx, node, lf, childRc);
     }
     ctx.restore();
+  }
+
+  /**
+   * Glow/bloom: siluet konten (opsional diwarnai) di-blur dua lapis — lebar + inti — lalu
+   * ditumpuk dengan mode additive di BAWAH konten. Dipanggil dengan ctx ber-transform identitas.
+   */
+  _glow(ctx, cv, g, amount, k, alpha) {
+    const strength = g.strength * amount;
+    const passes = [
+      [g.radius, Math.min(1, strength)],
+      [g.radius * g.core, Math.min(1, strength * 0.9)],
+    ];
+    // strength > 1: tambah lapisan lebar lagi (additive menumpuk)
+    for (let extra = strength - 1; extra > 0.05; extra -= 1) passes.push([g.radius * 1.6, Math.min(1, extra)]);
+    // Blur dikerjakan di resolusi kecil lalu di-upscale (teknik bloom standar): hasil blur memang
+    // halus, jadi detail tidak hilang, tapi biayanya turun drastis (1/d² piksel, radius 1/d).
+    const small = new Map();
+    const down = (d) => {
+      if (small.has(d)) return small.get(d);
+      const sw = Math.max(1, Math.ceil(cv.width / d));
+      const sh = Math.max(1, Math.ceil(cv.height / d));
+      const c = this._scratch(`glow-src-${d}`, sw, sh);
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = true;
+      x.drawImage(cv, 0, 0, sw, sh);
+      if (g.color) {
+        x.globalCompositeOperation = 'source-in';
+        x.fillStyle = g.color;
+        x.fillRect(0, 0, sw, sh);
+        x.globalCompositeOperation = 'source-over';
+      }
+      small.set(d, c);
+      return c;
+    };
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalCompositeOperation = g.mode;
+    for (const [r, a] of passes) {
+      const rp = r * k;
+      if (rp < 0.5 || a <= 0) continue;
+      const d = Math.max(1, Math.min(8, Math.floor(rp / 6)));
+      const src = down(d);
+      const bl = this._scratch('glow-blur', src.width, src.height);
+      const bx = bl.getContext('2d');
+      bx.filter = `blur(${(rp / d).toFixed(2)}px)`;
+      bx.drawImage(src, 0, 0);
+      ctx.globalAlpha = alpha * a;
+      ctx.drawImage(bl, 0, 0, cv.width, cv.height);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Glow tanpa kanvas penuh: konten node digambar LANGSUNG di resolusi kecil (1/d), di-blur
+   * di sana, lalu ditumpuk sekali ke frame. Konten aslinya digambar biasa oleh pemanggil.
+   * Jauh lebih murah daripada jalur isolate (yang butuh beberapa operasi 1080×1920 per layer).
+   */
+  _glowDirect(ctx, node, lf, rc, g, t) {
+    const m = ctx.getTransform();
+    const k = Math.hypot(m.a, m.b) || 1;
+    const alpha = ctx.globalAlpha * t.opacity;
+    const strength = g.strength * t.glow;
+    const passes = [
+      [g.radius, Math.min(1, strength)],
+      [g.radius * g.core, Math.min(1, strength * 0.9)],
+    ];
+    for (let extra = strength - 1; extra > 0.05; extra -= 1) passes.push([g.radius * 1.6, Math.min(1, extra)]);
+    const PW = this.pw;
+    const PH = this.ph;
+    const small = new Map();
+    const down = (d) => {
+      if (small.has(d)) return small.get(d);
+      const sw = Math.max(1, Math.ceil(PW / d));
+      const sh = Math.max(1, Math.ceil(PH / d));
+      const c = this._scratch(`glow-src-${d}`, sw, sh);
+      const x = c.getContext('2d');
+      x.setTransform(m.a / d, m.b / d, m.c / d, m.d / d, m.e / d, m.f / d);
+      // anak yang ter-isolate memakai ukuran kanvas kerja: samakan dengan kanvas kecil sementara
+      this.pw = sw;
+      this.ph = sh;
+      try {
+        this._content(x, node, lf, rc);
+      } finally {
+        this.pw = PW;
+        this.ph = PH;
+      }
+      if (g.color) {
+        x.setTransform(1, 0, 0, 1, 0, 0);
+        x.globalAlpha = 1;
+        x.globalCompositeOperation = 'source-in';
+        x.fillStyle = g.color;
+        x.fillRect(0, 0, sw, sh);
+        x.globalCompositeOperation = 'source-over';
+      }
+      small.set(d, c);
+      return c;
+    };
+    // Semua pass dikumpulkan di satu kanvas kecil, lalu hanya kotak yang menyala yang
+    // ditumpuk ke frame — satu komposit per layer, bukan satu komposit layar penuh per pass.
+    // skala kecil dari radius UTAMA (bukan inti): blur ∝ piksel × radius, jadi kanvas 1/d² dan
+    // radius 1/d. Inti tetap terlihat halus setelah di-upscale.
+    const d = Math.max(1, Math.min(8, Math.floor((g.radius * k) / 8)));
+    const src = down(d);
+    const sw = src.width;
+    const sh = src.height;
+    const acc = this._scratch(`glow-acc-${d}`, sw, sh);
+    const ax = acc.getContext('2d');
+    ax.globalCompositeOperation = 'lighter';
+    for (const [r, a] of passes) {
+      const rp = r * k;
+      if (rp < 0.5 || a <= 0) continue;
+      const bl = this._scratch(`glow-blur-${d}`, sw, sh);
+      const bx = bl.getContext('2d');
+      bx.filter = `blur(${(rp / d).toFixed(2)}px)`;
+      bx.drawImage(src, 0, 0);
+      ax.globalAlpha = a;
+      ax.drawImage(bl, 0, 0);
+    }
+    const box = alphaBox(ax, sw, sh);
+    if (!box) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalCompositeOperation = g.mode;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(acc, box.x, box.y, box.w, box.h, box.x * d, box.y * d, box.w * d, box.h * d);
+    ctx.restore();
+  }
+
+  /** Kanvas kerja per-nama (dipakai ulang antar frame; tidak bersarang). */
+  _scratch(name, w, h) {
+    this._scr ||= new Map();
+    let c = this._scr.get(name);
+    if (!c || c.width !== w || c.height !== h) {
+      c = this.env.createCanvas(w, h);
+      this._scr.set(name, c);
+    }
+    const x = c.getContext('2d');
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.globalAlpha = 1;
+    x.globalCompositeOperation = 'source-over';
+    x.filter = 'none';
+    x.clearRect(0, 0, w, h);
+    return c;
+  }
+
+  /** Perkiraan pergeseran piksel layar akibat kamera antara dua waktu (pan, zoom di tepi, putar). */
+  _cameraShift(camera, a, b) {
+    const ca = evalCamera(camera, a, this.doc.fps);
+    const cb = evalCamera(camera, b, this.doc.fps);
+    const z = Math.max(ca.zoom, cb.zoom);
+    const half = Math.hypot(this.doc.width, this.doc.height) / 2;
+    const pan = Math.hypot(ca.x - cb.x, ca.y - cb.y) * z;
+    const zoom = (Math.abs(ca.zoom - cb.zoom) / Math.min(ca.zoom, cb.zoom)) * half;
+    const rot = Math.abs(ca.rotation - cb.rotation) * DEG * half;
+    return pan + zoom + rot;
+  }
+
+  /**
+   * Perkiraan pergeseran (piksel lokal-induk) node + anak-anaknya antara dua waktu:
+   * translasi, putaran (dianggap radius 150 px), dan skala (dianggap ukuran 300 px).
+   */
+  _shift(node, a, b, fps, depth = 0) {
+    const ta = evalTransform(node, a, fps);
+    const tb = evalTransform(node, b, fps);
+    let px = Math.hypot(ta.x - tb.x, ta.y - tb.y);
+    px += Math.abs(ta.rotation - tb.rotation) * DEG * 150;
+    px += Math.abs(ta.scale * ta.scaleX - tb.scale * tb.scaleX) * 300 + Math.abs(ta.scale * ta.scaleY - tb.scale * tb.scaleY) * 300;
+    px += (Math.abs(ta.skewX - tb.skewX) + Math.abs(ta.skewY - tb.skewY)) * DEG * 300;
+    if (depth < 4 && node.children) {
+      let kid = 0;
+      for (const c of node.children) kid = Math.max(kid, this._shift(c, a, b, fps, depth + 1));
+      px += kid * Math.max(ta.scale, tb.scale);
+    }
+    return px;
+  }
+
+  /**
+   * Motion blur: render node di beberapa sub-frame (kamera ikut dievaluasi di waktu itu)
+   * lalu dirata-rata (additive 1/n). Mengembalikan false bila node diam → render biasa.
+   */
+  _motionBlurNode(ctx, node, lf, rc, mb) {
+    const half = mb.shutter / 2;
+    const a = lf - half;
+    const b = lf + half;
+    const useCam = rc.root && !node.fixed && rc.scene;
+    const m = ctx.getTransform();
+    const k = Math.hypot(m.a, m.b) || 1;
+    // pergeseran dalam piksel perangkat (k sudah memuat skala render & transform induk)
+    let px = this._shift(node, a, b, rc.fps) * k;
+    if (useCam && rc.scene.camera) px += (this._cameraShift(rc.scene.camera, a, b) / (node.transform?.depth ?? 1)) * k;
+    if (px < MB_MIN_PX) return false;
+    const n = mbSamples(px, mb.samples);
+    const acc = this._acquire(this.pw, this.ph);
+    const ax = acc.getContext('2d');
+    const inner = { ...node, blend: undefined, motionBlur: false };
+    // bobot bulat yang jumlahnya tepat 255: globalAlpha 1/n dibulatkan ke 8-bit oleh canvas,
+    // dan pembulatan itu menumpuk jadi terlalu terang (mis. n=10 → +2%). Dengan w/255 tak ada sisa.
+    // (Sisa pembulatan premultiplied: warna bisa ~1–2% lebih terang pada objek yang bergerak;
+    // alpha tetap tepat. Akumulasi float presisi ~160 ms/layer/frame — terlalu mahal.)
+    const weights = Array.from({ length: n }, (_, i) => Math.floor((255 * (i + 1)) / n) - Math.floor((255 * i) / n));
+    for (let i = 0; i < n; i++) {
+      const ts = a + ((b - a) * i) / (n - 1);
+      if (node.exposure && (ts < node.exposure[0] || ts >= node.exposure[1])) continue;
+      const tmp = this._acquire(this.pw, this.ph);
+      const tx = tmp.getContext('2d');
+      tx.setTransform(m);
+      const sub = { ...rc, inMB: true };
+      if (useCam) sub.cam = evalCamera(rc.scene.camera, ts, rc.fps);
+      this._node(tx, inner, ts, sub);
+      ax.globalCompositeOperation = 'lighter';
+      ax.globalAlpha = weights[i] / 255;
+      ax.drawImage(tmp, 0, 0);
+      this._release();
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (node.blend) ctx.globalCompositeOperation = node.blend;
+    const gap = mbGap(px, n);
+    if (gap) ctx.filter = gap;
+    ctx.drawImage(acc, 0, 0);
+    ctx.restore();
+    this._release();
+    return true;
   }
 
   _content(ctx, node, lf, rc) {
@@ -824,6 +1085,43 @@ export class Renderer {
       ctx.restore();
     }
   }
+}
+
+/** Kotak (piksel) yang alpha-nya > 0 di kanvas kecil, atau null bila kosong. */
+function alphaBox(x, w, h) {
+  const data = x.getImageData(0, 0, w, h).data;
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  for (let yy = 0; yy < h; yy++) {
+    const row = yy * w * 4;
+    for (let xx = 0; xx < w; xx++) {
+      if (data[row + xx * 4 + 3] > 1) {
+        if (xx < x0) x0 = xx;
+        if (xx > x1) x1 = xx;
+        if (yy < y0) y0 = yy;
+        y1 = yy;
+      }
+    }
+  }
+  if (x1 < 0) return null;
+  x0 = Math.max(0, x0 - 1);
+  y0 = Math.max(0, y0 - 1);
+  return { x: x0, y: y0, w: Math.min(w, x1 + 2) - x0, h: Math.min(h, y1 + 2) - y0 };
+}
+
+// Motion blur adaptif: di bawah MB_MIN_PX pergeseran tidak terlihat → tanpa blur.
+// Jumlah sample ~1 per 6 px pergeseran, dibatasi samples yang diminta.
+const MB_MIN_PX = 1.5;
+function mbSamples(px, max) {
+  return Math.max(2, Math.min(max, Math.ceil(px / 6)));
+}
+// Sample yang berjauhan terlihat sebagai salinan (ghosting) pada garis tipis. Blur kecil
+// seukuran setengah jarak antar-sample menutup celahnya; objek secepat itu memang lembut.
+function mbGap(devPx, n) {
+  const spacing = devPx / Math.max(1, n - 1);
+  return spacing > 2 ? `blur(${(spacing * 0.45).toFixed(2)}px)` : null;
 }
 
 function roundRectPath(ctx, x, y, w, h, r) {

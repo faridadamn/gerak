@@ -55,6 +55,8 @@ Penyakit paling umum video buatan AI: rapi, tapi terasa **presentasi yang di-aut
 9. **Tipografi hidup**: sentence case bobot 600–700 sebagai default; KAPITAL + 800 hanya untuk satu momen penekanan. Judul pendek **tanpa titik** kecuali disengaja. Ukuran, posisi, dan arah masuk berganti antar shot.
 10. **Keluar lebih cepat dari masuk**: masuk 0.6–1.2 dtk (`out-cubic`/`out-back`), keluar 0.3–0.5 dtk (`in-quad`). Simetris terasa mekanis.
 
+11. **Glow & motion blur = polesan, bukan pengganti desain.** `glow` untuk 1–3 objek pahlawan (angka, logo, garis grafik, stempel), paling kerasa di latar gelap. `p.motionBlur()` membuat pindah shot kamera dan objek cepat terasa sinematik. Lihat `docs/API.md` → *Glow & motion blur*; contoh: `examples/gaya/10-data-signal.mjs`, `11-satu-dunia-pesanan.mjs` (`GERAK_FX=0` untuk membandingkan tanpa efek).
+
 Heuristik cepat dari sheet: *bisakah frame ini jadi slide korporat tanpa diubah?* Kalau ya, rombak. *Apakah ada yang bergerak karena kamera, bukan cuma elemen yang menganimasikan dirinya sendiri?* Harus ya di setiap pergantian.
 
 ## Aturan yang sering bikin salah

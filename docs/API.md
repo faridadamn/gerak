@@ -32,6 +32,7 @@ const p = project({
 | `p.moveScene(id, index)`, `p.removeScene(id)` | atur urutan |
 | `p.find(id)` | handle layer/group/track, atau `ElementRef` untuk elemen |
 | `p.effects({grain, vignette})` | grain kertas `0.08` atau `{amount, animate:true, every:2}`; vignette `0.3` |
+| `p.motionBlur(true \| {samples: 6, shutter: 0.5} \| false)` | motion blur untuk semua layer root yang bergerak + gerak kamera (lihat **Glow & motion blur**) |
 | `p.boil(true \| {every:4, variants:3, amount:1} \| false)` | line boil untuk semua brush stroke & sketch |
 | `p.font(path, {family, weight, style})` | daftarkan font file (.ttf/.otf) |
 | `p.audio(src, opts)` / `p.sfx(type, opts)` | audio di timeline global |
@@ -68,7 +69,8 @@ const s = p.scene('Intro', { duration: '3s', transition: { type: 'fade', duratio
 const l = s.layer('Judul', { x: 540, y: 900, pivot: [0, 0], opacity: 1, fixed: true });
 ```
 
-Opsi node: `x, y, rotation, scale, scaleX, scaleY, skewX, skewY, pivot:[x,y], opacity, blur, depth` (semua bisa di-keyframe), plus
+Opsi node: `x, y, rotation, scale, scaleX, scaleY, skewX, skewY, pivot:[x,y], opacity, blur, depth, glow` (semua bisa di-keyframe; `glow` = pengali kekuatan glow), plus
+`glow: {color, radius, strength, mode, core}` dan `motionBlur: true | {samples, shutter} | false` (lihat **Glow & motion blur**),
 `blend` (`multiply`, `screen`, `overlay`, …), `filter` (CSS filter, mis. `'saturate(1.4)'`), `shadow: {color, blur, x, y}`,
 `clip: {rect:[x,y,w,h]} | {d: 'M…'}` (di ruang lokal node), `fixed: true` (abaikan kamera — buat caption/HUD),
 `isolate: true` (komposit sebagai satu kesatuan), `show: [from, to]`, `mask: '<id anak>'` + `maskInvert`, `wipe`, `visible`.
@@ -106,6 +108,36 @@ alias `in`, `out`, `in-out`, `smooth`, `snap`, `pop`, `anticipate`, `spring`, `s
 | `blurIn(at, {amount, dur, ease})` | |
 | `spinIn(at, {turns, dur, ease})` | |
 | `wipeIn(at, {dir:'right'\|'left'\|'down'\|'up'\|'center', dur, ease, rect})` / `wipeOut(...)` | clip yang membesar |
+
+### Glow & motion blur
+
+```js
+// glow/bloom per layer: siluet konten di-blur 2 lapis (lebar + inti) dan ditumpuk additive di bawahnya
+const neon = s.layer('Neon', { x: 540, y: 800, glow: { color: '#FF4FD8', radius: 40, strength: 1.3 } });
+neon.text('BUKA', 0, 0, { size: 240, weight: 800, color: '#FFE3FA', align: 'center', valign: 'middle' });
+neon.key(30, { glow: 2.5 }, 'out-cubic').key(50, { glow: 1 });   // kilatan: channel `glow` = pengali strength
+
+// motion blur: per layer, atau sekaligus untuk semua layer root + kamera
+s.layer('Bola', { motionBlur: { samples: 8, shutter: 0.7 } });
+p.motionBlur({ samples: 6, shutter: 0.5 });
+```
+
+| Opsi | Default | Arti |
+| --- | --- | --- |
+| `glow` | — | `true`, angka (= radius), atau objek di bawah |
+| `glow.color` | warna konten | warna cahaya (siluet diwarnai) |
+| `glow.radius` | `28` | jari-jari cahaya terluar (px) |
+| `glow.strength` | `1` | kekuatan; > 1 menambah lapisan lebar |
+| `glow.core` | `0.35` | jari-jari inti relatif terhadap `radius` |
+| `glow.mode` | `'lighter'` | `lighter` (additive, terbaik di latar gelap), `screen` (latar terang), `source-over`, `overlay`, `color-dodge` |
+| `motionBlur.samples` | `6` | sample maksimum (2–32). Dipakai adaptif: gerak < 1,5 px tanpa blur, ~1 sample per 6 px |
+| `motionBlur.shutter` | `0.5` | bagian frame yang "terbuka" (0.5 = 180°, 1 = sepanjang satu frame) |
+
+Catatan:
+- Glow dirender di resolusi kecil lalu di-upscale (teknik bloom): murah, tapi hindari puluhan layer glow sekaligus. Paling kerasa di latar gelap; di latar terang pakai `mode: 'screen'` dan warna jenuh.
+- `p.motionBlur()`: kalau kamera bergerak, seluruh scene di-blur sekaligus; kalau kamera diam, hanya layer yang bergerak. Layer diam tidak dirender ulang. `motionBlur: false` di layer = kecualikan.
+- Biaya render naik ±2–4× pada video yang banyak gerak. Pakai `--draft`/`-s 0.5` saat iterasi.
+- Getaran kamera (`camera.shake`) ikut ter-blur — kecilkan amplitudo bila motion blur aktif.
 
 ### Behavior (prosedural, ditambahkan di atas keyframe)
 

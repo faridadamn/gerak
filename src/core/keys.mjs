@@ -19,6 +19,7 @@ export const TRANSFORM_DEFAULTS = Object.freeze({
   opacity: 1,
   blur: 0,
   depth: 1,
+  glow: 1, // pengali kekuatan glow (hanya berefek bila node punya opsi glow)
 });
 
 export const CAMERA_DEFAULTS = Object.freeze({ x: 0, y: 0, zoom: 1, rotation: 0 });

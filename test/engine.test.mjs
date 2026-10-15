@@ -259,3 +259,59 @@ test('mask works when the mask layer is translated off its own origin', async ()
   assert.equal(x.getImageData(20, 100, 1, 1).data[0], 0); // kiri: tertutup mask
   assert.equal(x.getImageData(380, 100, 1, 1).data[0], 255); // kanan: terlihat
 });
+
+// ------------------------------------------------------------ glow & motion blur
+
+async function pixels(p, f, w, h) {
+  const env = await makeEnv(p.doc);
+  const r = new Renderer(p.doc, env);
+  const c = createCanvas(w, h);
+  const x = c.getContext('2d');
+  r.renderFrame(x, f);
+  return (px, py) => Array.from(x.getImageData(px, py, 1, 1).data);
+}
+
+test('glow: opsi divalidasi, menyala di sekitar objek, bisa di-keyframe', async () => {
+  const p0 = project({ width: 400, height: 200 });
+  assert.throws(() => p0.scene('s').layer('l', { glow: { warna: 'red' } }), /glow "warna" tidak dikenal/);
+  assert.throws(() => p0.scene('t').layer('l', { glow: { mode: 'blur' } }), /glow.mode/);
+  assert.equal(p0.scene('u').layer('l', { glow: 30 }).node.glow.radius, 30);
+
+  const build = (glow, key) => {
+    const p = project({ width: 400, height: 200, background: '#000000' });
+    const l = p.scene('s', { duration: 10 }).layer('kotak', glow ? { glow } : {});
+    l.rect(170, 70, 60, 60, { fill: '#ffffff' });
+    if (key) l.key(0, { glow: 0 });
+    return p;
+  };
+  const off = await pixels(build(null), 0, 400, 200);
+  const on = await pixels(build({ color: '#ff0000', radius: 30 }), 0, 400, 200);
+  const zero = await pixels(build({ color: '#ff0000', radius: 30 }, true), 0, 400, 200);
+  assert.deepEqual(off(150, 100).slice(0, 3), [0, 0, 0]); // di luar kotak: gelap
+  assert.ok(on(150, 100)[0] > 40, 'ada cahaya merah di luar kotak');
+  assert.deepEqual(on(200, 100).slice(0, 3), [255, 255, 255]); // isi kotak tetap utuh
+  assert.deepEqual(zero(150, 100).slice(0, 3), [0, 0, 0]); // channel glow 0 → mati
+});
+
+test('motion blur: objek cepat ber-smear, objek diam identik, deterministik', async () => {
+  assert.throws(() => project({ width: 10, height: 10 }).motionBlur({ samples: 1 }), /samples/);
+  const build = (mb) => {
+    const p = project({ width: 400, height: 100, background: '#000000', fps: 30 });
+    if (mb) p.motionBlur({ samples: 8, shutter: 1 });
+    const s = p.scene('s', { duration: 10 });
+    const cepat = s.layer('cepat', { y: 20 });
+    cepat.rect(-20, 0, 40, 20, { fill: '#ffffff' });
+    cepat.key(0, { x: 40 }, 'linear').key(10, { x: 360 }); // 32 px/frame
+    s.layer('diam').rect(180, 70, 40, 20, { fill: '#ffffff' });
+    return p;
+  };
+  const a = await pixels(build(false), 5, 400, 100);
+  const b = await pixels(build(true), 5, 400, 100);
+  // x = 200 di frame 5: tanpa blur tepi tajam; dengan blur, di luar tepi masih ada jejak
+  assert.deepEqual(a(225, 30).slice(0, 3), [0, 0, 0]);
+  assert.ok(b(225, 30)[0] > 30 && b(225, 30)[0] < 255, 'jejak setengah transparan di depan');
+  assert.ok(b(200, 30)[0] > 200, 'tengah objek tetap terang');
+  assert.deepEqual(b(200, 80), a(200, 80)); // objek diam tidak berubah
+  const c = await pixels(build(true), 5, 400, 100);
+  assert.deepEqual(b(215, 30), c(215, 30));
+});

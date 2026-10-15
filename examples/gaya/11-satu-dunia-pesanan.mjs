@@ -21,6 +21,10 @@ const GREEN = '#2E8B6E';
 const KRAFT = '#D9A066';
 const ROAD_Y = 1250;
 p.effects({ grain: 0.06, vignette: 0.16 });
+// Glow + motion blur. GERAK_FX=0 mematikan keduanya (dipakai untuk video before/after).
+const FX = process.env.GERAK_FX !== '0';
+const fx = (o) => (FX ? o : {});
+if (FX) p.motionBlur({ samples: 6, shutter: 0.7 });
 
 const s = p.scene('Dunia', { duration: 23 * K, background: CREAM });
 s.note({ action: 'Satu dunia horizontal. Kardus lahir dari HP, lompat ke QRIS, naik motor kurir, sampai di rumah. Kamera ganti ukuran shot; akhir extreme wide menyingkap rute.' });
@@ -31,7 +35,7 @@ s.note({ action: 'Satu dunia horizontal. Kardus lahir dari HP, lompat ke QRIS, n
 const sky = s.layer('Langit', { depth: 6 });
 sky.rect(-6000, -6000, 16000, 7400, { fill: { type: 'linear', from: [0, -1500], to: [0, 1250], stops: [[0, '#F7C59F'], [1, '#FBEFDF']] } });
 
-const sun = s.layer('Matahari', { x: 1500, y: 360, depth: 5 });
+const sun = s.layer('Matahari', { x: 1500, y: 360, depth: 5, ...fx({ glow: { color: '#FFB86B', radius: 90, strength: 1.2, mode: 'screen' } }) });
 sun.circle(0, 0, 260, { fill: 'rgba(255,184,107,0.28)' });
 sun.circle(0, 0, 170, { fill: '#FFB86B' });
 sun.pulse({ amount: 0.04, period: (4 * K) / 30 });
@@ -108,17 +112,18 @@ for (let r = 0; r < M; r++) for (let c = 0; c < M; c++) {
 qr.text('QRIS', 0, -250, { weight: 800, size: 64, color: INK, align: 'center', valign: 'middle', letterSpacing: 6 });
 
 const SCAN = 7 * K;
-const beam = s.layer('Sinar scan', { x: 1500, y: 640, show: [SCAN, SCAN + 2 * K] });
+const beam = s.layer('Sinar scan', { x: 1500, y: 640, show: [SCAN, SCAN + 2 * K], ...fx({ glow: { color: ORANGE, radius: 36, strength: 1.6 } }) });
 beam.rect(-190, -6, 380, 12, { fill: ORANGE, shadow: { color: 'rgba(255,107,53,0.9)', blur: 24 } });
 beam.key(SCAN, { y: 640 }, 'in-out-sine').key(SCAN + K, { y: 1000 }, 'in-out-sine').key(SCAN + 2 * K - 4, { y: 660 });
 s.sfx('riser', { at: SCAN, dur: 1.1, volume: -18 });
 
 const LUNAS = 8 * K + 14;
-const stamp = s.layer('Lunas', { x: 1500, y: 820, rotation: -12 });
+const stamp = s.layer('Lunas', { x: 1500, y: 820, rotation: -12, ...fx({ glow: { color: ORANGE, radius: 40, strength: 0.9, mode: 'screen' } }) });
 stamp.rect(-175, -66, 350, 132, { fill: 'rgba(255,255,255,0.88)', stroke: ORANGE, strokeWidth: 10, r: 14 });
 stamp.text('LUNAS', 0, 4, { weight: 800, size: 96, color: ORANGE, align: 'center', valign: 'middle', letterSpacing: 6 });
 stamp.key(0, { opacity: 0 }, 'hold').key(LUNAS, { opacity: 1 });
 stamp.pop(LUNAS, { from: 2.2, dur: 6, ease: 'out-quad', fade: false });
+if (FX) stamp.key(LUNAS, { glow: 2.5 }, 'out-cubic').key(LUNAS + 20, { glow: 0.6 });
 s.sfx('impact', { at: LUNAS, volume: -8 });
 s.sfx('coin', { at: LUNAS + 3, volume: -10 });
 
@@ -245,7 +250,7 @@ hop(15 * K + 4, 2840, 3010, { y0: ROAD_Y - 150 });                             /
 hop(16 * K, 3010, 3180, { h: 110 });                                           // ke depan pintu
 
 // hati di atas kardus
-const heart = s.layer('Hati', { x: 3180, y: 1000 });
+const heart = s.layer('Hati', { x: 3180, y: 1000, ...fx({ glow: { color: ORANGE, radius: 30, strength: 1.2, mode: 'screen' } }) });
 heart.path('M 0 30 C -60 -10 -40 -60 0 -30 C 40 -60 60 -10 0 30 Z', { fill: ORANGE });
 heart.key(0, { opacity: 0 }, 'hold').key(HAPPY + 2, { opacity: 1 });
 heart.pop(HAPPY + 2, { from: 0, dur: 8, ease: 'out-back', fade: false });
@@ -256,12 +261,12 @@ s.sfx('success', { at: HAPPY, volume: -10 });
 // PENUTUP — rute tergambar di extreme wide
 // ---------------------------------------------------------------------
 const WIDE = 19 * K + 6;
-const route = s.layer('Rute');
+const route = s.layer('Rute', { ...fx({ glow: { color: '#FF8A5C', radius: 70, strength: 2, mode: 'screen' } }) });
 route.stroke(withPressure(catmullRom([[540, 1060], [760, 1330], [1300, 1360], [1900, 1340], [2500, 1370], [3180, 1330]], 120), 'flat'), {
   brush: 'marker', size: 44, color: ORANGE, reveal: [WIDE - 4, 2 * K, 'in-out-sine'],
 });
 [[540, 1060], [1500, 1360], [1960, 1340], [3180, 1330]].forEach(([x, y], i) => {
-  const pin = s.layer(`Titik ${i}`, { x, y });
+  const pin = s.layer(`Titik ${i}`, { x, y, ...fx({ glow: { color: ORANGE, radius: 60, strength: 1.2, mode: 'screen' } }) });
   pin.circle(0, 0, 60, { fill: ORANGE, stroke: CREAM, strokeWidth: 14 });
   pin.key(0, { opacity: 0 }, 'hold').key(WIDE + i * 8, { opacity: 1 });
   pin.pop(WIDE + i * 8, { from: 0, dur: 8, ease: 'out-back', fade: false });
@@ -307,7 +312,7 @@ const cam = [
   [23 * K, C(1860, 1540, 0.35), 'linear'],
 ];
 cam.forEach(([f, v, e]) => s.camera.key(f, v, e));
-s.camera.shake({ amp: 10, freq: 18, from: LUNAS, to: LUNAS + 8, decay: true });
+s.camera.shake({ amp: FX ? 5 : 10, freq: 14, from: LUNAS, to: LUNAS + 8, decay: true });
 s.sfx('swoosh', { at: 7 * K - 14, dur: 0.4, volume: -16 });
 s.sfx('swoosh', { at: WIDE - 6, dur: 0.8, volume: -14 });
 

@@ -18,6 +18,10 @@ const YEL = '#FFE600';
 const WHITE = '#F2F2F2';
 const GREY = '#8C8C8C';
 p.effects({ grain: 0.05 });
+// Glow + motion blur. GERAK_FX=0 mematikan keduanya (dipakai untuk video before/after).
+const FX = process.env.GERAK_FX !== '0';
+const fx = (o) => (FX ? o : {});
+if (FX) p.motionBlur({ samples: 6, shutter: 0.8 });
 
 const mono = (o) => ({ font: MONO, weight: 700, color: WHITE, valign: 'middle', ...o });
 const note = (o) => ({ font: SERIF, weight: 400, italic: true, color: WHITE, valign: 'middle', ...o });
@@ -30,7 +34,7 @@ s1.note({ action: 'Pertanyaan, angka 5 raksasa kuning, cincin timer tergambar, "
 const q = s1.layer('Tanya', { fixed: true });
 q.text('Batas sabar pembeli\nnunggu balasan chat:', 80, 300, { weight: 800, size: 74, color: WHITE, valign: 'top', lineHeight: 1.15, anim: { type: 'lines', effect: 'rise', at: 2, stagger: 6, dur: 8 } });
 
-const ring = s1.layer('Cincin', { x: W / 2, y: 1020, rotation: -90 });
+const ring = s1.layer('Cincin', { x: W / 2, y: 1020, rotation: -90, ...fx({ glow: { radius: 34, strength: 1.1 } }) });
 ring.circle(0, 0, 400, { stroke: '#222', strokeWidth: 26 });
 ring.arc(0, 0, 400, 0, 300, { stroke: YEL, strokeWidth: 26, lineCap: 'round', draw: [2 * K, 3 * K, 'in-out-cubic'] });
 for (let i = 0; i < 60; i += 5) {
@@ -41,7 +45,7 @@ ring.fadeIn(K, 8);
 s1.sfx('tick', { at: 2 * K, volume: -12 });
 for (let b = 3; b < 6; b++) s1.sfx('tick', { at: b * K, volume: -14 });
 
-const big = s1.layer('Lima', { x: W / 2, y: 980 });
+const big = s1.layer('Lima', { x: W / 2, y: 980, ...fx({ glow: { color: '#FFB800', radius: 70, strength: 1.1 } }) });
 big.text('5', 0, 0, mono({ size: 620, color: YEL, align: 'center' }));
 big.key(0, { opacity: 0 }, 'hold').key(2 * K, { opacity: 1 });
 big.pop(2 * K, { from: 0.4, dur: 8, ease: 'out-back', fade: false });
@@ -69,12 +73,12 @@ title.text('vs waktu balas chat', X0, 410, mono({ size: 54, color: GREY, valign:
 title.fadeIn(0, 8);
 
 const PTS = [[tx(0), 590], [tx(1) - 40, 640], [tx(1), 700], [tx(1) + 70, 930], [tx(2), 1080], [tx(3), 1190], [tx(4), 1250]];
-const curve = s2.layer('Kurva');
+const curve = s2.layer('Kurva', { ...fx({ glow: { color: '#FFC400', radius: 30, strength: 1.3 } }) });
 curve.stroke(withPressure(catmullRom(PTS, 90), 'flat'), { brush: 'marker', size: 16, color: YEL, reveal: [K, 3 * K, 'in-out-sine'] });
 // area di bawah kurva tipis
 s2.sfx('swoosh', { at: K, dur: 1.4, volume: -16 });
 
-const dot = s2.layer('Titik', { x: tx(1), y: 700 });
+const dot = s2.layer('Titik', { x: tx(1), y: 700, ...fx({ glow: { color: '#FFE600', radius: 40, strength: 1.6 } }) });
 dot.circle(0, 0, 26, { fill: YEL });
 dot.circle(0, 0, 52, { stroke: YEL, strokeWidth: 4 });
 dot.key(0, { opacity: 0 }, 'hold').key(2 * K + 4, { opacity: 1 });
@@ -101,7 +105,7 @@ topH.wipeIn(0, { dir: 'right', dur: 7, ease: 'out-expo', rect: [0, 0, W, 960] })
 const t1 = s3.layer('Cepat', { x: W / 2, y: 600 });
 t1.text('CEPAT', 0, 0, mono({ size: 250, color: BLK, align: 'center', fit: 960 }));
 t1.slideIn(4, { from: 'left', distance: 300, dur: 8, ease: 'out-expo' });
-const t2 = s3.layer('Laku', { x: W / 2, y: 1240 });
+const t2 = s3.layer('Laku', { x: W / 2, y: 1240, ...fx({ glow: { color: '#FFB800', radius: 60, strength: 1.1 } }) });
 t2.text('= LAKU', 0, 0, mono({ size: 250, color: YEL, align: 'center', fit: 960 }));
 t2.key(0, { opacity: 0 }, 'hold').key(K, { opacity: 1 });
 t2.slideIn(K, { from: 'right', distance: 300, dur: 8, ease: 'out-expo', fade: false });

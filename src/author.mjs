@@ -34,6 +34,31 @@ const CAMERA_KEYS = new Set(Object.keys(CAMERA_DEFAULTS));
 
 // ------------------------------------------------------------ helpers
 
+const GLOW_MODES = ['lighter', 'screen', 'source-over', 'overlay', 'color-dodge'];
+/** glow: true | radius | {color, radius, strength, mode, core} */
+function normalizeGlow(v) {
+  const o = v === true ? {} : typeof v === 'number' ? { radius: v } : { ...v };
+  for (const k of Object.keys(o)) {
+    if (!['color', 'radius', 'strength', 'mode', 'core'].includes(k)) throw new GerakError(`Opsi glow "${k}" tidak dikenal. Pilihan: color, radius, strength, mode, core`, 'BAD_OPTION');
+  }
+  const g = { radius: o.radius ?? 28, strength: o.strength ?? 1, mode: o.mode ?? 'lighter', core: o.core ?? 0.35 };
+  if (o.color) g.color = o.color;
+  if (!(g.radius > 0)) throw new GerakError('glow.radius harus > 0', 'BAD_OPTION');
+  if (!GLOW_MODES.includes(g.mode)) throw new GerakError(`glow.mode "${g.mode}" tidak dikenal. Pilihan: ${GLOW_MODES.join(', ')}`, 'BAD_OPTION');
+  return g;
+}
+/** motionBlur: true | {samples, shutter}. shutter = bagian frame yang "terbuka" (0.5 = 180°). */
+function normalizeMotionBlur(v) {
+  const o = v === true ? {} : { ...v };
+  for (const k of Object.keys(o)) {
+    if (!['samples', 'shutter'].includes(k)) throw new GerakError(`Opsi motionBlur "${k}" tidak dikenal. Pilihan: samples, shutter`, 'BAD_OPTION');
+  }
+  const m = { samples: Math.round(o.samples ?? 6), shutter: o.shutter ?? 0.5 };
+  if (m.samples < 2 || m.samples > 32) throw new GerakError('motionBlur.samples harus 2–32', 'BAD_OPTION');
+  if (!(m.shutter > 0 && m.shutter <= 2)) throw new GerakError('motionBlur.shutter harus > 0 dan ≤ 2 (frame)', 'BAD_OPTION');
+  return m;
+}
+
 function collectIds(doc) {
   const used = new Set();
   const visitNode = (n) => {
@@ -951,7 +976,13 @@ export class Project {
     const fps = this.fps;
     for (const [k, v] of Object.entries(opts)) {
       if (k === 'id') continue;
-      if (TRANSFORM_KEYS.has(k)) (node.transform ||= {})[k] = v;
+      if (k === 'glow') {
+        if (v === false || v === null) delete node.glow;
+        else node.glow = normalizeGlow(v);
+      } else if (k === 'motionBlur') {
+        if (v === null) delete node.motionBlur;
+        else node.motionBlur = v === false ? false : normalizeMotionBlur(v);
+      } else if (TRANSFORM_KEYS.has(k)) (node.transform ||= {})[k] = v;
       else if (k === 'pivot') {
         (node.transform ||= {}).pivotX = v[0];
         node.transform.pivotY = v[1];
@@ -1100,6 +1131,16 @@ export class Project {
   boil(spec = true) {
     if (spec === false) delete this.doc.boil;
     else this.doc.boil = spec === true ? { every: 4, variants: 3, amount: 1 } : { every: 4, variants: 3, amount: 1, ...spec };
+    return this;
+  }
+
+  /**
+   * Motion blur untuk semua layer root yang bergerak (termasuk gerak kamera).
+   * spec: true | {samples: 6, shutter: 0.5} | false. Layer diam tidak dirender ulang.
+   */
+  motionBlur(spec = true) {
+    if (spec === false) delete this.doc.motionBlur;
+    else this.doc.motionBlur = normalizeMotionBlur(spec);
     return this;
   }
 

@@ -25,6 +25,8 @@ gerak sheet  examples/gaya/01-struk-kasir.mjs --every 15
 
 Font tambahan ada di `fonts/` (semua OFL, lisensi di sebelahnya). Daftarkan dengan `p.font('fonts/…ttf', { family })`.
 
+**Glow & motion blur** aktif di 10 dan 11. Bandingkan tanpa efek: `GERAK_FX=0 gerak render examples/gaya/10-data-signal.mjs -o tanpa-efek.mp4`.
+
 Data di contoh (harga, kuota, grafik) adalah **ilustrasi**. Ganti dengan data asli sebelum dipakai.
 
 ## Standar yang dipegang semua file di sini
