@@ -40,6 +40,23 @@ Resep di `examples/resep/` mengajarkan **teknik**, bukan gaya. Banyak di antaran
 
 Alur yang benar: brief → pilih gaya (lihat `examples/gaya/`) → ambil teknik dari resep → tulis script dengan palet & font gaya itu → sheet → revisi → render.
 
+## Uji anti-slide (WAJIB sebelum render final)
+
+Penyakit paling umum video buatan AI: rapi, tapi terasa **presentasi yang di-autoplay**. Diadaptasi dari aturan [Bang Motion](https://github.com/bangtutorial/bang-motion) (MIT) ke API Gerak. Cek **kode dan sheet**, bukan perasaan. Gagal satu poin → rombak dulu.
+
+1. **Ganti scene ≠ ganti slide.** Kalau ≥ 3 scene yang tiap scene-nya latar baru + teks baru lalu `transition`, itu slide deck. Utamakan **satu dunia** yang disusuri kamera: satu `p.scene()` panjang, dunia lebih luas dari frame, cerita pindah karena `s.camera` bergerak. Scene terpisah boleh, asal ada benang merah (lihat no. 2).
+2. **Ada subjek yang bertahan** > 60% durasi: satu tokoh/benda (kardus, HP, karakter, produk) yang dibawa penonton dari awal sampai akhir. Contoh: `examples/gaya/11-satu-dunia-pesanan.mjs`.
+3. **Maksimal 2 tingkat teks per shot**: satu kalimat/angka besar + satu label. Kicker + judul + body + chip = PPT. **≤ 5 kata per shot**; lebih dari itu pecah jadi dua shot atau ubah jadi visual.
+4. **Zoom = ganti ukuran shot, bukan napas kamera.** `camera.push({ zoom: 1.04 })` hampir tak terlihat. Kamera harus **pindah ke elemen yang sedang bercerita**: close-up (`zoom` 1.6–2) → medium (1.0) → wide (0.6–0.8), lalu balik. Pusatkan titik `(px, py)`: `camera.key(f, { x: px - W/2, y: py - H/2, zoom })`. Dua tempo: pindah shot cepat (`in-out-cubic`, 10–16 frame), menahan dengan push pelan (`in-out-sine`). Teks muncul **setelah** kamera tiba. Dua shot berurutan jangan sama ukurannya.
+5. **Miniatur = slide.** Extreme wide yang bikin dunia jadi garis tipis di tengah layar dan sisanya kosong → isi ruangnya (mis. tulisan raksasa yang "dicat" di dunia) atau jangan sejauh itu.
+6. **Latar tidak pernah diam**, tapi juga tidak berisik: parallax `depth` (awan 3, bukit 2, rumput depan 0.85), awan drift, grain, bentuk besar berputar pelan, gradien. Latar flat satu warna dari awal sampai akhir = gagal (kecuali gaya poster yang memang ganti warna per ketuk).
+7. **Label di lapisan layar, benda di dunia.** Caption pakai layer `{ fixed: true }` supaya tidak ikut zoom/terpotong; papan, chat bubble, stempel, angka yang "ditulis di dunia" ikut kamera.
+8. **Transisi tidak seragam.** Satu jenis transisi di semua pergantian = template. Pilih dari: kamera pindah shot, benda yang menutup lensa, `iris`/mask berbentuk benda, push, koreografi elemen keluar-masuk beririsan. Wipe blok warna datar maksimal 2× per video.
+9. **Tipografi hidup**: sentence case bobot 600–700 sebagai default; KAPITAL + 800 hanya untuk satu momen penekanan. Judul pendek **tanpa titik** kecuali disengaja. Ukuran, posisi, dan arah masuk berganti antar shot.
+10. **Keluar lebih cepat dari masuk**: masuk 0.6–1.2 dtk (`out-cubic`/`out-back`), keluar 0.3–0.5 dtk (`in-quad`). Simetris terasa mekanis.
+
+Heuristik cepat dari sheet: *bisakah frame ini jadi slide korporat tanpa diubah?* Kalau ya, rombak. *Apakah ada yang bergerak karena kamera, bukan cuma elemen yang menganimasikan dirinya sendiri?* Harus ya di setiap pergantian.
+
 ## Aturan yang sering bikin salah
 
 - **Waktu di dalam scene itu lokal** (frame 0 = awal scene). Angka = frame; string `'1.5s'`, `'500ms'`. Range `[from, to)` ujung eksklusif.
